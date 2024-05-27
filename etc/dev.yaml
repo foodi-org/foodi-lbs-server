@@ -1,8 +1,8 @@
 Username: nacos
 Password: nacos
 Address:
-  - 72.20.5.63:12380
-Namespace: dev
-DataID: dfkgfjkljlke
+  - 112.74.73.184
+Namespace: 28a6cb9a-3690-4178-8a2d-6494bed148bc
+DataID: foodi-lbs-service
 Group: service
 

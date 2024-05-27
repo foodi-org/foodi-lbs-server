@@ -26,12 +26,12 @@ type (
 
 	// yamlConf yaml配置文件映射结构体
 	yamlConf struct {
-		Username  string   `json:"Username"`
-		Password  string   `json:"Password"`
-		Address   []string `json:"Address"`
-		Namespace string   `json:"Namespace"`
-		DataID    string   `json:"DataID"`
-		Group     string   `json:"Group"`
+		Username  string   `yaml:"Username"`
+		Password  string   `yaml:"Password"`
+		Address   []string `yaml:"Address"`
+		Namespace string   `yaml:"Namespace"`
+		DataID    string   `yaml:"DataID"`
+		Group     string   `yaml:"Group"`
 	}
 
 	// greetConf nacos 配置映射结构体
@@ -63,7 +63,7 @@ type (
 
 			// 是否开启tls
 			TLS bool `json:"tls"`
-		}
+		} `json:"redis"`
 	}
 )
 
