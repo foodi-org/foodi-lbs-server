@@ -23,8 +23,17 @@ func NewGeoHashLogic(ctx context.Context, svcCtx *svc.ServiceContext) *GeoHashLo
 	}
 }
 
+// GeoHash
+// @Description: 获取位置的geo hash string value
+// @param key redis geo set key
+// @param member 位置
+// @return []string 如:[GeoHash] [wm6n2npe2u0]
+// @return error
 func (l *GeoHashLogic) GeoHash(in *foodi_lbs_server.HashRequest) (*foodi_lbs_server.HashReply, error) {
-	// todo: add your logic here and delete this line
+	res, err := l.svcCtx.Redis.GeoHash(in.GetKey(), in.GetMembers()...)
+	if err != nil {
+		return nil, err
+	}
 
-	return &foodi_lbs_server.HashReply{}, nil
+	return &foodi_lbs_server.HashReply{Hash: res}, nil
 }
