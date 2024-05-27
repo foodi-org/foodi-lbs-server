@@ -1,0 +1,158 @@
+syntax = "proto3";
+
+package foodiLBS;
+option go_package="github.com/foodi-org/foodi-lbs-server";
+
+enum LengthCorpus {
+  KILOMETER=0; // km
+  METER = 1; // m
+}
+
+enum SortCorpus {
+  ASC = 0;
+  DESC = 1;
+}
+
+// 将一个位置写入redis geo key set
+message GeoAddRequest {
+  string key = 1; // redis geo set key
+  string name = 2; // 位置名称
+  double longitude = 3; // 经度
+  double latitude = 4; // 维度
+}
+
+message GeoAddReply {
+  int64 idx = 1;
+}
+
+// 获取位置的经纬度参数
+message PositionRequest {
+  string key = 1; // redis geo set key
+  repeated string members = 2; // 需要查询的位置列表
+}
+
+// 获取位置的经纬度响应
+message PositionReply {
+  repeated Position pos = 1;
+}
+
+message Position {
+  double Longitude = 1; // 经度
+  double Latitude = 2; // 纬度
+}
+
+// 获取位置的geo hash string value
+message HashRequest {
+  string key = 1; // redis geo set key
+  repeated string members = 2; // 需要查询的位置列表
+}
+
+message HashReply {
+  repeated string hash = 1;
+}
+
+// 计算两个位置之间的距离参数
+message DistRequest {
+  string key = 1;
+  string member1 = 2; // 位置1
+  string member2 = 3; // 位置2
+  LengthCorpus lengthType = 4; // 距离单位,m/km
+}
+
+// 计算两个位置之间的距离返回
+message DistReply {
+  double dist = 1;
+  string lengthType = 2;
+}
+
+// 返回坐标位置半径范围内的坐标请求参数
+message RadioOrderRequest {
+  string key = 1; // redis geo set key
+  double longitude = 2; // 当前坐标:经度
+  double latitude = 3; // 当前坐标:纬度
+  double radius = 4; // 搜索半径
+  LengthCorpus lengthType = 5; // 搜索单位:m|km|ft|mi
+  RadioOrderOption option = 9;
+}
+
+// 返回坐标位置半径范围内的坐标返回,按照距离从进到远排序.以二维数组形式返回附带geo相关内容
+message RadioOrderReply {
+  repeated GeoLocation location = 1;
+}
+
+message RadioOrderOption {
+
+  // withCoord=true，则返回结果会带上匹配位置的经纬度
+  bool withCoord = 1;
+
+  // withDist=true，则返回结果会带上匹配位置与给定地理位置的距离
+  bool withDist = 2;
+
+  // withGeoHash=true，则返回结果会带上匹配位置的hash值
+  bool withGeoHash = 3;
+
+  //排序,默认结果是未排序的，ASC:从近到远排序;DESC:从远到近排序
+  string sort = 4;
+}
+
+message GeoLocation {
+  string Name = 1;
+  double Longitude = 2; // 经度
+  double Latitude = 3; // 纬度
+  double Dist = 4;
+  int64 GeoHash = 5;
+}
+
+// 返回坐标位置半径范围内的坐标请求参数
+message RadioOrderStoreRequest {
+  string key = 1; // redis geo set key
+  double longitude = 2; // 当前坐标:经度
+  double latitude = 3; // 当前坐标:纬度
+  double radius = 4; // 搜索半径
+  string lengthType = 5; // 搜索单位:m|km|ft|mi
+  SortCorpus sort = 6; // 排序方式
+  string storeKey = 7; // 存储 redis key
+  int64 count = 8;
+}
+
+message RadioMemberRequest {
+  string key = 1;
+  string member = 2;
+  double radio = 3;
+  LengthCorpus unit = 4;
+  SortCorpus sort = 5;
+  int64 count = 6;
+  RadioOrderOption option = 7;
+}
+
+message RadioMemberStoreRequest {
+  string key = 1; // redis geo set key
+  string member = 2;
+  double radius = 4; // 搜索半径
+  string lengthType = 5; // 搜索单位:m|km|ft|mi
+  SortCorpus sort = 6; // 排序方式
+  string storeKey = 7; // 存储 redis key
+}
+
+message DeliverDemoRequest {} // 参数传空示例，goctl不支持外部引入，需要手动定义
+
+message DeliverDemoReply {
+  bool regis = 1;
+}
+
+// lbs 服务
+service geo {
+  rpc GeoAdd(GeoAddRequest) returns (GeoAddReply);
+  rpc GeoPosition(PositionRequest) returns (PositionReply);
+  rpc GeoHash(HashRequest) returns (HashReply);
+  rpc GeoDist(DistRequest) returns (DistReply);
+  rpc RadioOrder(RadioOrderRequest) returns (RadioOrderReply);
+  rpc RadioOrderStore(RadioOrderStoreRequest) returns (RadioOrderReply);
+  rpc RadioMember(RadioMemberRequest) returns (RadioOrderReply);
+  rpc RadioMemberStore(RadioMemberStoreRequest) returns (RadioOrderReply);
+}
+
+// 配送服务，作为分组示例保留。后期扩展使用
+service delivery {
+  rpc Demo(DeliverDemoRequest) returns (DeliverDemoReply);
+}

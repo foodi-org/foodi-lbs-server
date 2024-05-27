@@ -1,0 +1,8 @@
+Username: nacos
+Password: nacos
+Address:
+  - 72.20.5.63:12380
+Namespace: dev
+DataID: dfkgfjkljlke
+Group: service
+
