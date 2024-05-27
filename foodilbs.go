@@ -20,7 +20,7 @@ import (
 var configFile = flag.String("f", "dev.yaml", "use the dev.yaml config file")
 
 func main() {
-	var c config.Config
+	var c = config.ServConf()
 	flag.Parse()
 	dir, _ := os.Getwd()
 

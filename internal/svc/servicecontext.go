@@ -1,6 +1,7 @@
 package svc
 
 import (
+	"fmt"
 	"github.com/foodi-org/foodi-lbs-server/internal/config"
 	foodipkg "github.com/foodi-org/foodi-pkg/mysql"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -21,7 +22,7 @@ type ServiceContext struct {
 //	@param dir 项目路径
 //	@param file 配置文件名称
 //	@return *ServiceContext
-func NewServiceContext(c config.Config, dir string, file string) error {
+func NewServiceContext(c *config.Config, dir string, file string) error {
 
 	// 加载配置
 	if err := config.InitServConf(dir, file); err != nil {
@@ -29,6 +30,7 @@ func NewServiceContext(c config.Config, dir string, file string) error {
 	}
 
 	// mysql client
+	fmt.Println("mysql: ", c.Mysql.DataSource)
 	foodipkg.InitConn(c.Mysql.DataSource)
 
 	// redis client
@@ -40,7 +42,7 @@ func NewServiceContext(c config.Config, dir string, file string) error {
 		PingTimeout: 3 * time.Second,
 	})
 	svc = ServiceContext{
-		Config: c,
+		Config: *c,
 		Redis:  red,
 	}
 	return nil
