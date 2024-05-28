@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	pkgnacos "github.com/foodi-org/foodi-pkg/nacos"
 	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
 	"gopkg.in/yaml.v2"
@@ -124,7 +125,25 @@ func InitServConf(path string, filename string) error {
 				Pass: gConf.Redis.Password,
 				Tls:  gConf.Redis.TLS,
 			},
-			Key: "lbs-redis",
+			Key: gConf.ServiceName,
+		}
+
+		// 日志配置
+		servConf.Log = logx.LogConf{
+			ServiceName:         "",
+			Mode:                "",
+			Encoding:            "",
+			TimeFormat:          "",
+			Path:                "",
+			Level:               "",
+			MaxContentLength:    0,
+			Compress:            false,
+			Stat:                false,
+			KeepDays:            0,
+			StackCooldownMillis: 0,
+			MaxBackups:          0,
+			MaxSize:             0,
+			Rotation:            "",
 		}
 	}
 
