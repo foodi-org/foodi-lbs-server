@@ -130,20 +130,14 @@ func InitServConf(path string, filename string) error {
 
 		// 日志配置
 		servConf.Log = logx.LogConf{
-			ServiceName:         "",
-			Mode:                "",
-			Encoding:            "",
-			TimeFormat:          "",
-			Path:                "",
-			Level:               "",
-			MaxContentLength:    0,
-			Compress:            false,
-			Stat:                false,
-			KeepDays:            0,
-			StackCooldownMillis: 0,
-			MaxBackups:          0,
-			MaxSize:             0,
-			Rotation:            "",
+			ServiceName: gConf.ServiceName,
+			Mode:        "file",
+			//TimeFormat:  "",
+			//Path:        "",
+			Level:      "info",
+			KeepDays:   10,
+			MaxBackups: 10,
+			Rotation:   "daily",
 		}
 	}
 
