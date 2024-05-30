@@ -1,19 +1,18 @@
 package config
 
 import (
-	"encoding/json"
-	pkgnacos "github.com/foodi-org/foodi-pkg/nacos"
-	"github.com/zeromicro/go-zero/core/discov"
+	"github.com/foodi-org/foodi-lbs-server/internal/pkg/pkgconsul"
 	"github.com/zeromicro/go-zero/core/logx"
 	"github.com/zeromicro/go-zero/core/stores/redis"
 	"github.com/zeromicro/go-zero/zrpc"
+	"github.com/zeromicro/zero-contrib/zrpc/registry/consul"
 	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
 )
 
 var (
-	servConf Config
+	servConf = Config{}
 )
 
 type (
@@ -23,20 +22,29 @@ type (
 		Mysql struct {
 			DataSource string
 		}
+		Consul consul.Conf
 	}
 
-	// yamlConf yaml配置文件映射结构体
-	yamlConf struct {
-		Username  string   `yaml:"Username"`
-		Password  string   `yaml:"Password"`
-		Address   []string `yaml:"Address"`
-		Namespace string   `yaml:"Namespace"`
-		DataID    string   `yaml:"DataID"`
-		Group     string   `yaml:"Group"`
+	SrvYaml struct {
+		UnmarshalKey string     `yaml:"UnmarshalKey"`
+		ConsulYaml   ConsulYaml `yaml:"Consul"`
 	}
 
-	// greetConf nacos 配置映射结构体
-	greetConf struct {
+	ConsulYaml struct {
+		Key   string   `yaml:"Key"`
+		Meta  Meta     `yaml:"Meta"`
+		Tag   []string `yaml:"Tag"`
+		Host  string   `yaml:"Host"`
+		Token string   `yaml:"Token"`
+		TTL   int      `yaml:"TTL"`
+	}
+
+	Meta struct {
+		Protocol string `yaml:"Protocol"`
+	}
+
+	// LBSConf nacos 配置映射结构体
+	LBSConf struct {
 		// ServiceName 服务名
 		ServiceName string `json:"serviceName"`
 
@@ -46,11 +54,6 @@ type (
 		Mysql struct {
 			Datasource string `json:"datasource"`
 		} `json:"mysql"`
-
-		Etcd struct {
-			Host []string `json:"host"` // etcd 集群
-			Key  string   `json:"key"`  // 该服务注册到etcd的key
-		} `json:"etcd"`
 
 		Redis struct {
 
@@ -80,65 +83,70 @@ func ServConf() *Config {
 //	@return error
 func InitServConf(path string, filename string) error {
 	var (
-		conf  yamlConf
-		gConf greetConf
-		data  string
+		srvYaml SrvYaml
+		lbsConf LBSConf
 	)
 
 	// 解析yaml配置文件
-	if file, err := os.ReadFile(filepath.Join(path, "etc", filename)); err != nil {
+	file, err := os.ReadFile(filepath.Join(path, "etc", filename))
+	if err != nil {
 		return err
-	} else {
-		if err = yaml.Unmarshal(file, &conf); err != nil {
-			return err
-		}
+	}
 
-		// 加载nacos并解析配置
-		n := pkgnacos.NewNacosClient(conf.Namespace, conf.Username, conf.Password, conf.Address)
-		n.SetCacheDir(path)
-		n.SetLogDir(path)
+	if err = yaml.Unmarshal(file, &srvYaml); err != nil {
+		return err
+	}
 
-		if err = n.CreateConfigClient(); err != nil {
-			return err
-		}
-		if data, err = n.GetConfig(conf.DataID, conf.Group); err != nil {
-			return err
-		}
-		if err = json.Unmarshal([]byte(data), &gConf); err != nil {
-			return err
-		}
+	servConf.Consul = consul.Conf{
+		Host:  srvYaml.ConsulYaml.Host,
+		Key:   srvYaml.ConsulYaml.Key,
+		Token: srvYaml.ConsulYaml.Token,
+		Tag:   srvYaml.ConsulYaml.Tag,
+		TTL:   srvYaml.ConsulYaml.TTL,
+	}
 
-		// 设置 zrpc service config
-		servConf.Name = gConf.ServiceName
-		servConf.ListenOn = gConf.ListenOn
-		servConf.Mysql.DataSource = gConf.Mysql.Datasource
+	if err = servConf.Consul.Validate(); err != nil {
+		return err
+	}
 
-		servConf.Etcd = discov.EtcdConf{
-			Hosts: gConf.Etcd.Host,
-			Key:   gConf.Etcd.Key,
-		}
+	consulClient := pkgconsul.NewConsulDO()
+	consulClient.SetConfig(servConf.Consul)
 
-		servConf.Redis = redis.RedisKeyConf{
-			RedisConf: redis.RedisConf{
-				Host: gConf.Redis.Host,
-				Type: gConf.Redis.Type,
-				Pass: gConf.Redis.Password,
-				Tls:  gConf.Redis.TLS,
-			},
-			Key: gConf.ServiceName,
-		}
+	// consul connect
+	if err = consulClient.Connect(); err != nil {
+		panic(err)
+	}
 
-		// 日志配置
-		servConf.Log = logx.LogConf{
-			ServiceName: gConf.ServiceName,
-			Mode:        "file",
-			//TimeFormat:  "",
-			//Path:        "",
-			Level:      "info",
-			KeepDays:   10,
-			MaxBackups: 10,
-			Rotation:   "daily",
-		}
+	// load service config from consul with key
+	if err = consulClient.LoadJsonConfig(srvYaml.UnmarshalKey, &lbsConf); err != nil {
+		panic(err)
+	}
+
+	// 设置 zrpc service config
+	servConf.Name = lbsConf.ServiceName
+	servConf.ListenOn = lbsConf.ListenOn
+	servConf.Mysql.DataSource = lbsConf.Mysql.Datasource
+
+	servConf.Redis = redis.RedisKeyConf{
+		RedisConf: redis.RedisConf{
+			Host: lbsConf.Redis.Host,
+			Type: lbsConf.Redis.Type,
+			Pass: lbsConf.Redis.Password,
+			Tls:  lbsConf.Redis.TLS,
+		},
+		Key: lbsConf.ServiceName,
+	}
+
+	// 日志配置
+	servConf.Log = logx.LogConf{
+		ServiceName: lbsConf.ServiceName,
+		Mode:        "file",
+		//TimeFormat:  "",
+		Path:       path,
+		Level:      "info",
+		KeepDays:   10,
+		MaxBackups: 10,
+		Rotation:   "daily",
 	}
 
 	return nil

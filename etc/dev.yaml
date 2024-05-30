@@ -1,8 +1,11 @@
-Username: nacos
-Password: nacos
-Address:
-  - 112.74.73.184
-Namespace: 28a6cb9a-3690-4178-8a2d-6494bed148bc
-DataID: foodi-lbs-service
-Group: service
+UnmarshalKey: foodi-dev/foodi-lbs-service # consul 配置文件 key
+Consul:
+  Host: 8.134.206.241:8500 # consul 节点列表
+  Token: "" # 集群开启ACL后需要配置
+  Key: foodi-lbs-server.rpc # 注册到consul的key
+  Meta:
+    Protocol: grpc
+  Tag: # 注册到 consul 的标签,多个以逗号隔开
+    - foodi-lbs-server
+    - rpc
 

@@ -1,7 +1,6 @@
 package svc
 
 import (
-	"fmt"
 	"github.com/foodi-org/foodi-lbs-server/internal/config"
 	foodipkg "github.com/foodi-org/foodi-pkg/mysql"
 	"github.com/zeromicro/go-zero/core/stores/redis"
@@ -30,7 +29,6 @@ func NewServiceContext(c *config.Config, dir string, file string) error {
 	}
 
 	// mysql client
-	fmt.Println("mysql: ", c.Mysql.DataSource)
 	foodipkg.InitConn(c.Mysql.DataSource)
 
 	// redis client
