@@ -44,3 +44,11 @@ location based services of foodi
   // 服务分组带上参数 -m
   goctl rpc protoc foodiLBS.proto --go_out=. --go-grpc_out=. --zrpc_out=. -m
   ```
+
+## feature
+***
+解决 `gorm`问题
+基于`go-zero`没有自带的`gorm`框架， `sqlx`使用体感上还是觉得太麻烦了。改为使用`gorm`后相应的查询缓存和链路追踪又不能适配。
+
+后续尝试解决这个问题，考虑结合两种模式，使用`gorm` 给 `sqlx` 生成 `sql` 的模式，用惯用的写法模式解决手写sql问题。
+相应带来的性能损耗需要测试一下。
