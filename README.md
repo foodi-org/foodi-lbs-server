@@ -1,4 +1,4 @@
-# foodi-lbs-server
+# foodi-lbs-service
 
 location based services of foodi
 
